@@ -61,20 +61,21 @@
     return entries;
   }
 
-  // One entry: the time, the student's name (linked to their diary), then the text
+  // One entry: the time and the student's name (linked to their diary),
+  // then a line break and the text, all in the same paragraph
   function makeEntry(entry) {
     const article = document.createElement('article');
-    const header = document.createElement('p');
     const time = document.createElement('time');
     time.textContent = entry.time;
     const name = document.createElement('a');
     name.href = entry.url;
     name.textContent = entry.name;
-    header.append(time, ' ', name);
-    article.append(header);
-    entry.paragraphs.forEach(function (text) {
+    entry.paragraphs.forEach(function (text, index) {
       const p = document.createElement('p');
-      p.textContent = text;
+      if (index === 0) {
+        p.append(time, ' ', name, document.createElement('br'));
+      }
+      p.append(text);
       article.append(p);
     });
     return article;
