@@ -88,7 +88,11 @@
       .filter(function (result) { return result.status === 'fulfilled'; })
       .flatMap(function (result) { return result.value; });
     entries.sort(function (a, b) { return a.minutes - b.minutes; });
-    document.getElementById('entries').replaceChildren(...entries.map(makeEntry));
+    // A line break after each post
+    const posts = entries.flatMap(function (entry) {
+      return [makeEntry(entry), document.createElement('br')];
+    });
+    document.getElementById('entries').replaceChildren(...posts);
   }
 </script>
 
