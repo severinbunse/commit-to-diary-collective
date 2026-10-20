@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<script>
+  // Each student's diary is at https://<username>.github.io/commit-to-diary/
+  // Fill in a GitHub username to add a student.
+  const students = [
+    { name: 'Aara', user: 'chaua377-glitch' },
+    { name: 'Amber', user: 'leea818-maker' },
+    { name: 'ella', user: 'c-rrot' },
+    { name: 'Florence', user: 'wuf741' },
+    { name: 'Isabella', user: 'isabellanoret' },
+    { name: 'Jackson', user: 'kimj1917' },
+    { name: 'Katie', user: 'loiva-0915' },
+    { name: 'Kitty', user: 'shik238' },
+    { name: 'Liv', user: 'marol895' },
+    { name: 'Lulu', user: '756ps' },
+    { name: 'Renee', user: 'lcrenee' },
+    { name: 'Sara', user: 'sarasara01' },
+    { name: 'Sofia', user: 'reyes686' },
+    { name: 'Tarni', user: 'tarnianand' },
+    { name: 'Undarga', user: 'ts1undarga' },
+    { name: 'Victoria', user: 'victoriayim' }
+  ];
+  const repo = 'commit-to-diary';
+  const placeholder = 'Write what you see and/or hear here.';
+
+  // "10:42" → minutes since midnight, so entries can be sorted.
+  // 1:00–6:59 count as afternoon.
+  function toMinutes(time) {
+    const match = time.match(/(\d{1,2})[:.](\d{2})/);
+    if (!match) return Infinity;
+    let hours = Number(match[1]);
+    if (hours < 7) hours += 12;
+    return hours * 60 + Number(match[2]);
+  }
+
+  // Read one student's diary and return its entries
+  async function loadDiary(student) {
+    const url = 'https://' + student.user.toLowerCase() + '.github.io/' + repo + '/';
+    const response = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!response.ok) return [];
+    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const entries = [];
+    page.querySelectorAll('.entry').forEach(function (entry) {
+      const time = entry.querySelector('time');
+      const timeText = time ? time.textContent.trim() : '';
+      const paragraphs = Array.from(entry.querySelectorAll('p'))
+        .map(function (p) { return p.textContent.trim(); })
+        .filter(function (text) { return text && text !== placeholder; });
+      if (paragraphs.length) {
+        entries.push({ name: student.name, url: url, time: timeText, minutes: toMinutes(timeText), paragraphs: paragraphs });
+      }
+    });
+    return entries;
+  }
+
+  // One entry: the time, the student's name (linked to their diary), then the text
+  function makeEntry(entry) {
+    const article = document.createElement('article');
+    const header = document.createElement('p');
+    const time = document.createElement('time');
+    time.textContent = entry.time;
+    const name = document.createElement('a');
+    name.href = entry.url;
+    name.textContent = entry.name;
+    header.append(time, ' ', name);
+    article.append(header);
+    entry.paragraphs.forEach(function (text) {
+      const p = document.createElement('p');
+      p.textContent = text;
+      article.append(p);
+    });
+    return article;
+  }
+
+  async function update() {
+    const results = await Promise.allSettled(
+      students.filter(function (student) { return student.user; }).map(loadDiary)
+    );
+    const entries = results
+      .filter(function (result) { return result.status === 'fulfilled'; })
+      .flatMap(function (result) { return result.value; });
+    entries.sort(function (a, b) { return a.minutes - b.minutes; });
+    document.getElementById('entries').replaceChildren(...entries.map(makeEntry));
+  }
+</script>
+
+<main id="entries"></main>
+
+<script>
+  // Load everyone's entries now, then check for new ones every minute
+  update();
+  setInterval(update, 60 * 1000);
+</script>
+
+</body>
+</html>
